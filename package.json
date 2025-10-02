@@ -1,0 +1,11 @@
+{
+  "name": "parcial1-fullstack",
+  "version": "1.0.0",
+  "description": "Fullstack project with React frontend and API functions",
+  "type": "module",
+  "dependencies": {
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  }
+}
