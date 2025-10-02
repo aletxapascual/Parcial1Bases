@@ -3,5 +3,10 @@
   "buildCommand": "cd web && npm run build",
   "outputDirectory": "web/dist",
   "installCommand": "cd web && npm install",
-  "framework": "vite"
+  "framework": "vite",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }
