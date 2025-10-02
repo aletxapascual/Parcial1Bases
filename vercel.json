@@ -3,20 +3,5 @@
   "buildCommand": "cd web && npm run build",
   "outputDirectory": "web/dist",
   "installCommand": "cd web && npm install && cd ../api && npm install",
-  "framework": "vite",
-  "functions": {
-    "api/vercel/functions/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/vercel/functions/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/web/dist/$1"
-    }
-  ]
+  "framework": "vite"
 }
