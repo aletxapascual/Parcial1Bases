@@ -374,14 +374,14 @@ function App() {
                               onClick={() => handleEditClient(client)}
                               title="Editar cliente"
                             >
-                              ✏️
+                              ✎
                             </button>
                             <button 
                               className="delete-button" 
                               onClick={() => handleDeleteClient(client.id)}
                               title="Eliminar cliente (también eliminará sus contratos)"
                             >
-                              🗑️
+                              ✕
                             </button>
                           </div>
                         </td>
@@ -546,14 +546,14 @@ function App() {
                               onClick={() => handleEditContract(contract)}
                               title="Editar contrato"
                             >
-                              ✏️
+                              ✎
                             </button>
                             <button 
                               className="delete-button" 
                               onClick={() => handleDeleteContract(contract.id)}
                               title="Eliminar contrato"
                             >
-                              🗑️
+                              ✕
                             </button>
                           </div>
                         </td>
