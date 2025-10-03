@@ -125,7 +125,7 @@ function App() {
   };
 
   const handleDeleteClient = async (clientId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este cliente? También se eliminarán todos sus contratos asociados.')) {
       return;
     }
 
@@ -379,8 +379,7 @@ function App() {
                             <button 
                               className="delete-button" 
                               onClick={() => handleDeleteClient(client.id)}
-                              title="Eliminar cliente"
-                              disabled={client.contract_count > 0}
+                              title="Eliminar cliente (también eliminará sus contratos)"
                             >
                               🗑️
                             </button>
@@ -553,7 +552,6 @@ function App() {
                               className="delete-button" 
                               onClick={() => handleDeleteContract(contract.id)}
                               title="Eliminar contrato"
-                              disabled={contract.status === 'active'}
                             >
                               🗑️
                             </button>

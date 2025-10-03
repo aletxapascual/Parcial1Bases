@@ -297,16 +297,14 @@ app.delete('/clients/:id', async (req, res) => {
       return res.status(404).json({ error: 'Client not found' });
     }
     
-    // Verificar si tiene contratos activos
-    const contractsQuery = 'SELECT COUNT(*) as active_contracts FROM contracts WHERE client_id = $1 AND status = $2';
-    const contractsResult = await client.query(contractsQuery, [id, 'active']);
-    const activeContracts = parseInt(contractsResult.rows[0].active_contracts);
+    // Verificar si tiene contratos (solo avisar, pero permitir eliminar)
+    const contractsQuery = 'SELECT COUNT(*) as total_contracts FROM contracts WHERE client_id = $1';
+    const contractsResult = await client.query(contractsQuery, [id]);
+    const totalContracts = parseInt(contractsResult.rows[0].total_contracts);
     
-    if (activeContracts > 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        error: 'Cannot delete client with active contracts. Please cancel contracts first.' 
-      });
+    // Si tiene contratos, los eliminaremos también (CASCADE DELETE)
+    if (totalContracts > 0) {
+      console.log(`Deleting client ${id} with ${totalContracts} contracts (CASCADE DELETE)`);
     }
     
     // Eliminar cliente (CASCADE eliminará los contratos inactivos)
@@ -412,12 +410,10 @@ app.delete('/contracts/:id', async (req, res) => {
       return res.status(404).json({ error: 'Contract not found' });
     }
     
-    // Verificar si el contrato está activo
+    // Permitir eliminar cualquier contrato (incluyendo activos)
+    // Solo avisar si está activo
     if (existingContract.rows[0].status === 'active') {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        error: 'Cannot delete active contract. Please change status to cancelled first.' 
-      });
+      console.log(`Deleting active contract ${id} - status will be changed to cancelled`);
     }
     
     // Eliminar contrato
