@@ -27,6 +27,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Estados para edición
+  const [editingClient, setEditingClient] = useState(null);
+  const [editingContract, setEditingContract] = useState(null);
 
 
   useEffect(() => {
@@ -83,15 +87,56 @@ function App() {
 
     try {
       setLoading(true);
+      
+      if (editingClient) {
+        // Actualizar cliente existente
+        await axios.put(`${API_URL}/clients/${editingClient.id}`, clientForm);
+        setSuccess('¡Cliente actualizado exitosamente!');
+        setEditingClient(null);
+      } else {
+        // Crear nuevo cliente
       await axios.post(`${API_URL}/clients`, clientForm);
       setSuccess('¡Cliente creado exitosamente!');
-      setClientForm({ name: '', email: '', phone: '' });
+      }
       
+      setClientForm({ name: '', email: '', phone: '' });
       await fetchClients();
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al crear cliente: ' + err.message);
+      setError(err.response?.data?.error || 'Error al procesar cliente: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditClient = (client) => {
+    setEditingClient(client);
+    setClientForm({
+      name: client.name,
+      email: client.email,
+      phone: client.phone || ''
+    });
+  };
+
+  const handleCancelEditClient = () => {
+    setEditingClient(null);
+    setClientForm({ name: '', email: '', phone: '' });
+  };
+
+  const handleDeleteClient = async (clientId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.delete(`${API_URL}/clients/${clientId}`);
+      setSuccess('¡Cliente eliminado exitosamente!');
+      await fetchClients();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al eliminar cliente: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -131,8 +176,17 @@ function App() {
         monthly_cost: parseFloat(contractForm.monthly_cost)
       };
       
+      if (editingContract) {
+        // Actualizar contrato existente
+        await axios.put(`${API_URL}/contracts/${editingContract.id}`, payload);
+        setSuccess('¡Contrato actualizado exitosamente!');
+        setEditingContract(null);
+      } else {
+        // Crear nuevo contrato
       await axios.post(`${API_URL}/contracts`, payload);
       setSuccess('¡Contrato creado exitosamente!');
+      }
+      
       setContractForm({
         client_id: '',
         airline: '',
@@ -143,16 +197,57 @@ function App() {
         status: 'active'
       });
 
-
       await fetchContracts();
-      
-
       await fetchClients();
       
-
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al crear contrato: ' + err.message);
+      setError(err.response?.data?.error || 'Error al procesar contrato: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditContract = (contract) => {
+    setEditingContract(contract);
+    setContractForm({
+      client_id: contract.client_id.toString(),
+      airline: contract.airline,
+      plan: contract.plan,
+      start_date: contract.start_date,
+      end_date: contract.end_date || '',
+      monthly_cost: contract.monthly_cost.toString(),
+      status: contract.status
+    });
+  };
+
+  const handleCancelEditContract = () => {
+    setEditingContract(null);
+    setContractForm({
+      client_id: '',
+      airline: '',
+      plan: '',
+      start_date: '',
+      end_date: '',
+      monthly_cost: '',
+      status: 'active'
+    });
+  };
+
+  const handleDeleteContract = async (contractId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este contrato?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.delete(`${API_URL}/contracts/${contractId}`);
+      setSuccess('¡Contrato eliminado exitosamente!');
+      await fetchContracts();
+      await fetchClients();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al eliminar contrato: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -191,7 +286,9 @@ function App() {
             <h2>Clientes</h2>
 
             <form className="form" onSubmit={handleClientSubmit}>
-              <h3 style={{ marginBottom: '15px' }}>Agregar Nuevo Cliente</h3>
+              <h3 style={{ marginBottom: '15px' }}>
+                {editingClient ? `Editando Cliente: ${editingClient.name}` : 'Agregar Nuevo Cliente'}
+              </h3>
               <div className="form-row">
                 <div className="form-group">
                   <label>Nombre *</label>
@@ -226,9 +323,16 @@ function App() {
                   />
                 </div>
               </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
               <button type="submit" className="submit-button" disabled={loading}>
-                {loading ? 'Creando...' : 'Crear Cliente'}
+                  {loading ? 'Procesando...' : (editingClient ? 'Actualizar Cliente' : 'Crear Cliente')}
+                </button>
+                {editingClient && (
+                  <button type="button" className="cancel-button" onClick={handleCancelEditClient}>
+                    Cancelar
               </button>
+                )}
+              </div>
             </form>
 
             <div className="table-container">
@@ -249,6 +353,7 @@ function App() {
                       <th>Teléfono</th>
                       <th>Número de Contratos</th>
                       <th>Creado el</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -262,6 +367,25 @@ function App() {
                           <strong>{client.contract_count}</strong>
                         </td>
                         <td>{new Date(client.created_at).toLocaleDateString()}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <button 
+                              className="edit-button" 
+                              onClick={() => handleEditClient(client)}
+                              title="Editar cliente"
+                            >
+                              ✏️
+                            </button>
+                            <button 
+                              className="delete-button" 
+                              onClick={() => handleDeleteClient(client.id)}
+                              title="Eliminar cliente"
+                              disabled={client.contract_count > 0}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -276,7 +400,9 @@ function App() {
             <h2>Contratos</h2>
 
             <form className="form" onSubmit={handleContractSubmit}>
-              <h3 style={{ marginBottom: '15px' }}>Agregar Nuevo Contrato</h3>
+              <h3 style={{ marginBottom: '15px' }}>
+                {editingContract ? `Editando Contrato: ${editingContract.airline} - ${editingContract.plan}` : 'Agregar Nuevo Contrato'}
+              </h3>
               <div className="form-row">
                 <div className="form-group">
                   <label>Cliente *</label>
@@ -364,9 +490,16 @@ function App() {
                   </select>
                 </div>
               </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
               <button type="submit" className="submit-button" disabled={loading}>
-                {loading ? 'Creando...' : 'Crear Contrato'}
+                  {loading ? 'Procesando...' : (editingContract ? 'Actualizar Contrato' : 'Crear Contrato')}
+                </button>
+                {editingContract && (
+                  <button type="button" className="cancel-button" onClick={handleCancelEditContract}>
+                    Cancelar
               </button>
+                )}
+              </div>
             </form>
 
             <div className="table-container">
@@ -389,6 +522,7 @@ function App() {
                       <th>Fecha de Fin</th>
                       <th>Costo Mensual</th>
                       <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -405,6 +539,25 @@ function App() {
                           <span className={`status-badge status-${contract.status}`}>
                             {translateStatus(contract.status)}
                           </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <button 
+                              className="edit-button" 
+                              onClick={() => handleEditContract(contract)}
+                              title="Editar contrato"
+                            >
+                              ✏️
+                            </button>
+                            <button 
+                              className="delete-button" 
+                              onClick={() => handleDeleteContract(contract.id)}
+                              title="Eliminar contrato"
+                              disabled={contract.status === 'active'}
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
